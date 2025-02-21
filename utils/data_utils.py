@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import re
 
 # Chemin du dossier de données
 DATA_DIR = "data"
@@ -11,9 +10,13 @@ def clean_numeric_columns(df):
     """
     for col in df.columns:
         # Vérifier si la colonne contient des données numériques formatées avec des points
-        if df[col].dtype == "object" and df[col].str.contains(r"\.", na=False).any():
-            # Supprimer les points et convertir en nombres
-            df[col] = df[col].astype(str).str.replace(".", "", regex=False).astype(float)
+        if df[col].dtype == "object":  # Si la colonne est de type "object" (chaîne de caractères)
+            try:
+                # Essayer de supprimer les points et de convertir en nombres
+                df[col] = df[col].astype(str).str.replace(".", "", regex=False).astype(float)
+            except (ValueError, TypeError):
+                # Si la conversion échoue, ignorer cette colonne (elle n'est pas numérique)
+                continue
     return df
 
 def load_data(action):
