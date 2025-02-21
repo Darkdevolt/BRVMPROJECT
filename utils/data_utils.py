@@ -7,16 +7,18 @@ DATA_DIR = "data"
 def clean_numeric_columns(df):
     """
     Nettoie les colonnes numériques en supprimant les séparateurs de milliers (points).
+    Si le point est un séparateur de milliers, il est supprimé.
+    Si le point est un séparateur décimal, il est conservé.
     """
     for col in df.columns:
         # Vérifier si la colonne contient des données numériques formatées avec des points
         if df[col].dtype == "object":  # Si la colonne est de type "object" (chaîne de caractères)
             try:
-                # Essayer de supprimer les points et de convertir en nombres
-                df[col] = df[col].astype(str).str.replace(".", "", regex=False).astype(float)
+                # Essayer de convertir en float pour vérifier si le point est un séparateur décimal
+                df[col] = df[col].astype(float)
             except (ValueError, TypeError):
-                # Si la conversion échoue, ignorer cette colonne (elle n'est pas numérique)
-                continue
+                # Si la conversion échoue, supposer que le point est un séparateur de milliers
+                df[col] = df[col].astype(str).str.replace(".", "", regex=False).astype(float)
     return df
 
 def load_data(action):
