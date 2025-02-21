@@ -18,7 +18,11 @@ def clean_numeric_columns(df):
                 df[col] = df[col].astype(float)
             except (ValueError, TypeError):
                 # Si la conversion échoue, supposer que le point est un séparateur de milliers
-                df[col] = df[col].astype(str).str.replace(".", "", regex=False).astype(float)
+                try:
+                    df[col] = df[col].astype(str).str.replace(".", "", regex=False).astype(float)
+                except (ValueError, TypeError):
+                    # Si la conversion échoue à nouveau, ignorer cette colonne (elle n'est pas numérique)
+                    continue
     return df
 
 def load_data(action):
