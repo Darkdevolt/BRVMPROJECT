@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
 from utils.data_utils import load_data, save_data, update_data, clean_numeric_columns
 
 # Titre de l'application
@@ -81,7 +82,7 @@ if uploaded_file is not None:
     # Lire le fichier CSV téléchargé
     new_data = pd.read_csv(uploaded_file)
     
-    # Nettoyer les colonnes numériques (supprimer les séparateurs de milliers)
+    # Nettoyer les colonnes numériques
     new_data = clean_numeric_columns(new_data)
     
     # Afficher le message de confirmation AVANT l'aperçu des données
@@ -108,5 +109,19 @@ if st.button("Afficher les données historiques"):
     if historical_data is not None:
         st.subheader(f"Données historiques pour {action_key}")
         st.write(historical_data)
+        
+        # Afficher la dernière date enregistrée
+        last_date = historical_data["Date"].max()
+        st.info(f"Dernière date enregistrée : {last_date}")
+        
+        # Créer un graphique
+        st.subheader("Graphique des données historiques")
+        fig, ax = plt.subplots()
+        ax.plot(historical_data["Date"], historical_data["Close"], label="Close Price")
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Close Price")
+        ax.set_title(f"Évolution du cours de {action_key}")
+        ax.legend()
+        st.pyplot(fig)
     else:
         st.warning(f"Aucune donnée trouvée pour {action_key}.")
