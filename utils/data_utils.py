@@ -1,8 +1,20 @@
 import pandas as pd
 import os
+import re
 
 # Chemin du dossier de données
 DATA_DIR = "data"
+
+def clean_numeric_columns(df):
+    """
+    Nettoie les colonnes numériques en supprimant les séparateurs de milliers (points).
+    """
+    for col in df.columns:
+        # Vérifier si la colonne contient des données numériques formatées avec des points
+        if df[col].dtype == "object" and df[col].str.contains(r"\.", na=False).any():
+            # Supprimer les points et convertir en nombres
+            df[col] = df[col].astype(str).str.replace(".", "", regex=False).astype(float)
+    return df
 
 def load_data(action):
     """
@@ -10,7 +22,10 @@ def load_data(action):
     """
     file_path = os.path.join(DATA_DIR, f"{action}.csv")
     if os.path.exists(file_path):
-        return pd.read_csv(file_path)
+        df = pd.read_csv(file_path)
+        # Nettoyer les colonnes numériques lors du chargement
+        df = clean_numeric_columns(df)
+        return df
     return None
 
 def save_data(action, data):
