@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from utils.data_utils import load_data, save_data, update_data
+from utils.data_utils import load_data, save_data, update_data, clean_numeric_columns
 
 # Titre de l'application
 st.title("Analyse des actions BRVM")
@@ -80,6 +80,9 @@ uploaded_file = st.file_uploader("Téléchargez le fichier CSV", type=["csv"])
 if uploaded_file is not None:
     # Lire le fichier CSV téléchargé
     new_data = pd.read_csv(uploaded_file)
+    
+    # Nettoyer les colonnes numériques (supprimer les séparateurs de milliers)
+    new_data = clean_numeric_columns(new_data)
     
     # Afficher le message de confirmation AVANT l'aperçu des données
     st.warning("Voulez-vous vraiment mettre à jour les données ? Cette action écrasera les données existantes.")
