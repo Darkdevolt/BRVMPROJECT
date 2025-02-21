@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-import matplotlib.pyplot as plt
+import plotly.express as px
 from utils.data_utils import load_data, save_data, update_data, clean_numeric_columns
 
 # Titre de l'application
@@ -114,14 +114,9 @@ if st.button("Afficher les données historiques"):
         last_date = historical_data["Date"].max()
         st.info(f"Dernière date enregistrée : {last_date}")
         
-        # Créer un graphique
+        # Créer un graphique avec Plotly
         st.subheader("Graphique des données historiques")
-        fig, ax = plt.subplots()
-        ax.plot(historical_data["Date"], historical_data["Close"], label="Close Price")
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Close Price")
-        ax.set_title(f"Évolution du cours de {action_key}")
-        ax.legend()
-        st.pyplot(fig)
+        fig = px.line(historical_data, x="Date", y="Close", title=f"Évolution du cours de {action_key}")
+        st.plotly_chart(fig)
     else:
         st.warning(f"Aucune donnée trouvée pour {action_key}.")
