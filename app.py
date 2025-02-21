@@ -6,8 +6,17 @@ from utils.data_utils import load_data, save_data, update_data
 # Titre de l'application
 st.title("Analyse des actions BRVM")
 
+# Liste complète des actions BRVM
+actions = [
+    "ABJC", "BICC", "BNBC", "BOAB", "BOABF", "BOAC", "BOAM", "BOAN", "BOAS",
+    "CABC", "CBIBF", "CFAC", "CIEC", "ECOC", "ETIT", "FTSC", "LNBB", "NEIC",
+    "NSBC", "NTLC", "ONTBF", "ORAC", "ORGT", "PALC", "PRSC", "SAFC", "SCRC",
+    "SDCC", "SDSC", "SEMC", "SGBC", "SHEC", "SIBC", "SICC", "SIVC", "SLBC",
+    "SMBC", "SNTS", "SOGC", "SPHC", "STAC", "STBC", "SVOC", "TTLC", "TTLS",
+    "TTRC", "UNLC", "UNXC"
+]
+
 # Liste déroulante pour sélectionner l'action
-actions = ["SONATEL", "BOA", "ECOBANK", "OTHER"]
 selected_action = st.selectbox("Sélectionnez l'action", actions)
 
 # Téléchargement du fichier CSV
@@ -22,15 +31,13 @@ if uploaded_file is not None:
     st.write(new_data)
     
     # Boîte de dialogue de confirmation
-    if st.warning("Voulez-vous vraiment mettre à jour les données ? Cette action écrasera les données existantes."):
-        if st.button("Confirmer la mise à jour"):
-            # Mettre à jour les données historiques
-            update_data(selected_action, new_data)
-            st.success(f"Données pour {selected_action} mises à jour avec succès!")
-        else:
-            st.info("Mise à jour annulée.")
+    st.warning("Voulez-vous vraiment mettre à jour les données ? Cette action écrasera les données existantes.")
+    if st.button("Confirmer la mise à jour"):
+        # Mettre à jour les données historiques
+        update_data(selected_action, new_data)
+        st.success(f"Données pour {selected_action} mises à jour avec succès!")
     else:
-        st.info("Aucune action effectuée.")
+        st.info("Mise à jour annulée.")
 
 # Afficher les données historiques
 if st.button("Afficher les données historiques"):
