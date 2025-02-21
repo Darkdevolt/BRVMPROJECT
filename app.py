@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-import plotly.express as px
+import plotly.express as px  # Utilisation de Plotly au lieu de Matplotlib
 from utils.data_utils import load_data, save_data, update_data, clean_numeric_columns
 
 # Titre de l'application
