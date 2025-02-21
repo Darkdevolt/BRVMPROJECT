@@ -117,11 +117,13 @@ if st.button("Afficher les données historiques"):
         # Créer un graphique avec Altair
         st.subheader("Graphique des données historiques")
         chart = alt.Chart(historical_data).mark_line().encode(
-            x="Date",
-            y="Close",
-            tooltip=["Date", "Close"]
+            x="Date:T",  # 'T' pour le type temporel (date)
+            y="Close:Q",  # 'Q' pour le type quantitatif (nombre)
+            tooltip=["Date", "Close"]  # Infobulles
         ).properties(
-            title=f"Évolution du cours de {action_key}"
+            title=f"Évolution du cours de {action_key}",
+            width=800,
+            height=400
         )
         st.altair_chart(chart, use_container_width=True)
     else:
