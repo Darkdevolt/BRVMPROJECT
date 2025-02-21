@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-import plotly.express as px  # Utilisation de Plotly au lieu de Matplotlib
+import altair as alt  # Utilisation de Altair pour les graphiques
 from utils.data_utils import load_data, save_data, update_data, clean_numeric_columns
 
 # Titre de l'application
@@ -114,9 +114,15 @@ if st.button("Afficher les données historiques"):
         last_date = historical_data["Date"].max()
         st.info(f"Dernière date enregistrée : {last_date}")
         
-        # Créer un graphique avec Plotly
+        # Créer un graphique avec Altair
         st.subheader("Graphique des données historiques")
-        fig = px.line(historical_data, x="Date", y="Close", title=f"Évolution du cours de {action_key}")
-        st.plotly_chart(fig)
+        chart = alt.Chart(historical_data).mark_line().encode(
+            x="Date",
+            y="Close",
+            tooltip=["Date", "Close"]
+        ).properties(
+            title=f"Évolution du cours de {action_key}"
+        )
+        st.altair_chart(chart, use_container_width=True)
     else:
         st.warning(f"Aucune donnée trouvée pour {action_key}.")
