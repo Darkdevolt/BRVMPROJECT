@@ -17,15 +17,26 @@ if uploaded_file is not None:
     # Lire le fichier CSV téléchargé
     new_data = pd.read_csv(uploaded_file)
     
-    # Mettre à jour les données historiques
-    update_data(selected_action, new_data)
+    # Afficher un aperçu des nouvelles données
+    st.subheader("Aperçu des nouvelles données")
+    st.write(new_data)
     
-    st.success(f"Données pour {selected_action} mises à jour avec succès!")
+    # Boîte de dialogue de confirmation
+    if st.warning("Voulez-vous vraiment mettre à jour les données ? Cette action écrasera les données existantes."):
+        if st.button("Confirmer la mise à jour"):
+            # Mettre à jour les données historiques
+            update_data(selected_action, new_data)
+            st.success(f"Données pour {selected_action} mises à jour avec succès!")
+        else:
+            st.info("Mise à jour annulée.")
+    else:
+        st.info("Aucune action effectuée.")
 
 # Afficher les données historiques
 if st.button("Afficher les données historiques"):
     historical_data = load_data(selected_action)
     if historical_data is not None:
+        st.subheader(f"Données historiques pour {selected_action}")
         st.write(historical_data)
     else:
         st.warning(f"Aucune donnée trouvée pour {selected_action}.")
