@@ -1,62 +1,49 @@
 import pandas as pd
 import os
 
-# Chemin du dossier de données
-DATA_DIR = "data"
-
-def clean_numeric_columns(df):
-    """
-    Nettoie les colonnes numériques en supprimant les séparateurs de milliers (points).
-    Si le point est un séparateur de milliers, il est supprimé.
-    Si le point est un séparateur décimal, il est conservé.
-    """
-    for col in df.columns:
-        # Vérifier si la colonne contient des données numériques formatées avec des points
-        if df[col].dtype == "object":  # Si la colonne est de type "object" (chaîne de caractères)
-            try:
-                # Essayer de convertir en float pour vérifier si le point est un séparateur décimal
-                df[col] = df[col].astype(float)
-            except (ValueError, TypeError):
-                # Si la conversion échoue, supposer que le point est un séparateur de milliers
-                try:
-                    df[col] = df[col].astype(str).str.replace(".", "", regex=False).astype(float)
-                except (ValueError, TypeError):
-                    # Si la conversion échoue à nouveau, ignorer cette colonne (elle n'est pas numérique)
-                    continue
-    return df
-
-def load_data(action):
-    """
-    Charge les données historiques pour une action spécifique.
-    """
-    file_path = os.path.join(DATA_DIR, f"{action}.csv")
-    if os.path.exists(file_path):
-        df = pd.read_csv(file_path)
-        # Nettoyer les colonnes numériques lors du chargement
-        df = clean_numeric_columns(df)
-        return df
+def load_data(action_key):
+    """Charge les données historiques avec gestion des formats"""
+    filename = f"data/{action_key}_historique.csv"
+    if os.path.exists(filename):
+        try:
+            return pd.read_csv(
+                filename,
+                parse_dates=['Date'],
+                dayfirst=True,
+                decimal=',',
+                thousands=' '
+            )
+        except Exception as e:
+            print(f"Erreur de chargement : {str(e)}")
+            return None
     return None
 
-def save_data(action, data):
-    """
-    Sauvegarde les données pour une action spécifique.
-    """
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-    
-    file_path = os.path.join(DATA_DIR, f"{action}.csv")
-    data.to_csv(file_path, index=False)
+def save_data(action_key, df):
+    """Sauvegarde les données dans le format correct"""
+    os.makedirs("data", exist_ok=True)
+    df.to_csv(f"data/{action_key}_historique.csv", index=False, encoding='utf-8-sig')
 
-def update_data(action, new_data):
-    """
-    Met à jour les données historiques avec de nouvelles données.
-    """
-    historical_data = load_data(action)
-    if historical_data is not None:
-        # Fusionner les anciennes et nouvelles données
-        updated_data = pd.concat([historical_data, new_data]).drop_duplicates().reset_index(drop=True)
+def update_data(action_key, new_df):
+    """Met à jour les données existantes avec les nouvelles"""
+    existing_df = load_data(action_key)
+    if existing_df is not None:
+        combined_df = pd.concat([existing_df, new_df]).drop_duplicates('Date')
     else:
-        updated_data = new_data
+        combined_df = new_df
+    save_data(action_key, combined_df)
+
+def clean_numeric_columns(df):
+    """Nettoie les colonnes numériques avec conversions"""
+    numeric_cols = ['Dernier', 'Ouv.', 'Plus Haut', 'Plus Bas', 'Variation %']
     
-    # Sauvegarder les données mises à jour
-    save_data(action, updated_data)
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.replace(',', '.')
+                .str.replace('[^0-9.]', '', regex=True)
+                .astype(float)
+            )
+    
+    return df
