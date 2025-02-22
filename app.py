@@ -2,54 +2,37 @@ import streamlit as st
 import pandas as pd
 import os
 import altair as alt
-from utils.data_utils import load_data, save_data, update_data
+from utils.data_utils import load_data, save_data, update_data, clean_numeric_columns
 
 # Titre de l'application
 st.title("Analyse des actions BRVM")
 
-# ... (le dictionnaire actions_dict reste inchangé) ...
+# Dictionnaire de correspondance entre noms abrégés et noms complets
+actions_dict = {
+    # ... (contenu inchangé du dictionnaire) ...
+}
 
-def clean_numeric_columns(df):
-    """Nettoie les colonnes numériques avec des formats spéciaux"""
-    # Convertir les dates au format standard
-    df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y').dt.strftime('%d/%m/%Y')
-    
-    # Nettoyer les colonnes numériques
-    numeric_columns = ['Dernier', 'Ouv.', 'Plus Haut', 'Plus Bas', 'Vol.', 'Variation %']
-    
-    for col in numeric_columns:
-        if col == 'Vol.':
-            # Gérer le format "2,08K" -> 2080
-            df[col] = df[col].str.replace('K', '')
-            df[col] = df[col].str.replace(',', '.').astype(float) * 1000
-        elif col == 'Variation %':
-            # Gérer les pourcentages avec virgule
-            df[col] = df[col].str.replace(',', '.').str.rstrip('%').astype(float)
-        else:
-            # Convertir les nombres avec virgule décimale
-            df[col] = df[col].astype(str).str.replace(',', '.').astype(float)
-    
-    return df
+# Créer une liste combinée pour la recherche
+search_options = list(actions_dict.keys()) + list(actions_dict.values())
 
-def load_data(action_key):
-    """Charge les données historiques avec gestion des formats"""
-    filename = f"data/{action_key}_historique.csv"
-    if os.path.exists(filename):
-        df = pd.read_csv(
-            filename,
-            parse_dates=['Date'],
-            dayfirst=True,  # Important pour les dates européennes
-            thousands=' ',  # Gère les espaces comme séparateurs de milliers
-            decimal=','     # Gère les virgules comme séparateurs décimaux
-        )
-        return df
-    return None
+# Champ de recherche pour sélectionner l'action
+selected_action = st.selectbox("Recherchez une action (nom abrégé ou nom complet)", search_options)
 
-# ... (le reste du code reste inchangé jusqu'à la partie de téléchargement) ...
+# Récupérer le nom abrégé correspondant
+if selected_action in actions_dict:
+    action_key = selected_action
+else:
+    action_key = [k for k, v in actions_dict.items() if v == selected_action][0]
+
+# Afficher le nom abrégé et le nom complet
+st.info(f"Action sélectionnée : {action_key} - {actions_dict[action_key]}")
+
+# Téléchargement du fichier CSV
+uploaded_file = st.file_uploader("Téléchargez le fichier CSV", type=["csv"])
 
 if uploaded_file is not None:
     try:
-        # Lire le fichier en gérant les formats européens
+        # Lire le fichier avec les paramètres européens
         new_data = pd.read_csv(
             uploaded_file,
             parse_dates=['Date'],
@@ -58,18 +41,64 @@ if uploaded_file is not None:
             decimal=','
         )
         
-        # Conversion supplémentaire pour la colonne Vol.
+        # Conversion spécifique pour la colonne Volume
         if 'Vol.' in new_data.columns:
-            new_data['Vol.'] = new_data['Vol.'].astype(str).str.replace('K', '')
-            new_data['Vol.'] = pd.to_numeric(new_data['Vol.'].str.replace(',', '.'), errors='coerce') * 1000
+            new_data['Vol.'] = (
+                new_data['Vol.']
+                .astype(str)
+                .str.replace('[Kk]', '', regex=True)
+                .str.replace(',', '.')
+                .astype(float) * 1000
+            )
         
         # Nettoyage supplémentaire
         new_data = clean_numeric_columns(new_data)
         
-        # Vérification du format de date
+        # Validation des dates
         if new_data['Date'].isnull().any():
-            st.error("Erreur de format de date détectée. Veuillez vérifier le format JJ/MM/AAAA")
+            st.error("Format de date invalide détecté. Utilisez le format JJ/MM/AAAA")
         
-        # ... (le reste du code de traitement reste inchangé) ...
+        # Confirmation de mise à jour
+        st.warning("Voulez-vous vraiment mettre à jour les données ? Cette action est irréversible.")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Confirmer la mise à jour"):
+                update_data(action_key, new_data)
+                st.success(f"Données {action_key} mises à jour !")
+        with col2:
+            if st.button("Annuler"):
+                st.info("Mise à jour annulée")
+        
+        # Aperçu des données
+        st.subheader("Aperçu des données importées")
+        st.write(new_data.head())
 
-# ... (la partie d'affichage des données reste inchangé) ...
+    except Exception as e:
+        st.error(f"Erreur de traitement : {str(e)}")
+
+# Affichage des données historiques
+if st.button("Afficher l'historique complet"):
+    historical_data = load_data(action_key)
+    
+    if historical_data is not None:
+        st.subheader(f"Historique {action_key}")
+        st.write(historical_data)
+        
+        # Dernière date disponible
+        last_date = historical_data["Date"].max().strftime('%d/%m/%Y')
+        st.info(f"Dernière mise à jour : {last_date}")
+        
+        # Visualisation graphique
+        chart = alt.Chart(historical_data).mark_line().encode(
+            x=alt.X('Date:T', title='Date'),
+            y=alt.Y('Close:Q', title='Cours de clôture'),
+            tooltip=['Date', 'Close']
+        ).properties(
+            title=f'Évolution de {action_key}',
+            width=800,
+            height=400
+        )
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.warning("Aucune donnée historique disponible")
