@@ -1,52 +1,46 @@
+import streamlit as st
 import pandas as pd
-import numpy as np
 
-def check_structure(df):
-    """
-    Vérifie la structure du fichier CSV.
-    Retourne True si la structure est correcte, sinon False.
-    """
-    required_columns = ['Date', 'Open', 'High', 'Low', 'Close']
-    return all(column in df.columns for column in required_columns)
+# Définition de la structure de référence
+expected_columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+dtypes_ref = {'Date': str, 'Open': float, 'High': float, 'Low': float, 'Close': float, 'Volume': float}
 
-def handle_missing_data(df):
-    """
-    Gère les données manquantes en utilisant une interpolation linéaire.
-    Retourne le DataFrame traité.
-    """
-    # Convertir la colonne 'Date' en datetime
-    df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%y')
-    
-    # Trier les données par date
-    df = df.sort_values(by='Date')
-    
-    # Interpolation linéaire pour les colonnes numériques
-    df['Open'] = df['Open'].interpolate(method='linear')
-    df['High'] = df['High'].interpolate(method='linear')
-    df['Low'] = df['Low'].interpolate(method='linear')
-    df['Close'] = df['Close'].interpolate(method='linear')
-    
-    return df
+st.title("📊 Vérification de la Structure des Fichiers CSV")
 
-def process_data(file):
-    """
-    Charge un fichier CSV, vérifie sa structure, et gère les données manquantes.
-    Retourne le DataFrame traité ou None si la structure est incorrecte.
-    """
+# Upload du fichier par l'utilisateur
+uploaded_file = st.file_uploader("Déposez votre fichier CSV", type=["csv"])
+
+if uploaded_file is not None:
     try:
-        # Charger le fichier CSV
-        df = pd.read_csv(file)
-        
-        # Vérifier la structure
-        if not check_structure(df):
-            print("Erreur : La structure du fichier CSV est incorrecte.")
-            return None
-        
-        # Gérer les données manquantes
-        df = handle_missing_data(df)
-        
-        return df
-    
+        df = pd.read_csv(uploaded_file)
+
+        # Supprimer les espaces et mettre en minuscules pour éviter les erreurs
+        df.columns = df.columns.str.strip().str.lower()
+        expected_columns_lower = [col.lower() for col in expected_columns]
+
+        # Vérification des colonnes (sans distinction majuscule/minuscule)
+        if list(df.columns) != expected_columns_lower:
+            st.error("❌ Erreur : La structure du fichier ne correspond pas au modèle attendu.")
+            st.write("Colonnes attendues :", expected_columns)
+            st.write("Colonnes trouvées :", list(df.columns))
+        else:
+            # Normalisation des noms de colonnes pour correspondre au format attendu
+            df.columns = expected_columns  # Remettre les noms exacts
+
+            # Vérification et conversion des types de données
+            type_errors = []
+            for col, expected_type in dtypes_ref.items():
+                try:
+                    df[col] = df[col].astype(expected_type)
+                except ValueError:
+                    type_errors.append(f"{col} (Attendu: {expected_type}, Trouvé: {df[col].dtype})")
+
+            if type_errors:
+                st.error("❌ Erreur : Les types de certaines colonnes ne correspondent pas.")
+                for err in type_errors:
+                    st.write(err)
+            else:
+                st.success("✅ Succès : Le fichier est valide et respecte la structure requise !")
+
     except Exception as e:
-        print(f"Erreur lors du traitement du fichier : {e}")
-        return None
+        st.error(f"❌ Erreur lors de la lecture du fichier : {e}")
