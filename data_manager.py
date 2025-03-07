@@ -7,10 +7,7 @@ def check_structure(df):
     Retourne True si la structure est correcte, sinon False.
     """
     required_columns = ['Date', 'Open', 'High', 'Low', 'Close']
-    if all(column in df.columns for column in required_columns):
-        return True
-    else:
-        return False
+    return all(column in df.columns for column in required_columns)
 
 def handle_missing_data(df):
     """
@@ -31,14 +28,14 @@ def handle_missing_data(df):
     
     return df
 
-def process_data(file_path):
+def process_data(file):
     """
     Charge un fichier CSV, vérifie sa structure, et gère les données manquantes.
     Retourne le DataFrame traité ou None si la structure est incorrecte.
     """
     try:
         # Charger le fichier CSV
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file)
         
         # Vérifier la structure
         if not check_structure(df):
