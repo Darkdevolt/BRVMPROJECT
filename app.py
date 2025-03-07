@@ -14,6 +14,8 @@ def calculate_metrics(df):
     df['ATR'] = df['True Range'].rolling(window=14).mean()
     df['Closing Position'] = (df['Close'] - df['Low']) / (df['High'] - df['Low'])
     df['Volatility'] = df['Daily Change (%)'].rolling(window=14).std()
+    df['Sharpe Ratio'] = df['Daily Change (%)'].mean() / df['Volatility'] if df['Volatility'].mean() != 0 else np.nan
+    df['Max Drawdown'] = (df['Close'].cummax() - df['Close']) / df['Close'].cummax()
     
     return df
 
@@ -34,6 +36,20 @@ def interpret_metrics(df):
         interpretations.append("❌ Clôture proche du plus bas, les vendeurs dominent.")
     else:
         interpretations.append("⚖️ Indécision du marché, clôture au milieu de la fourchette.")
+    
+    # Sharpe Ratio
+    if last_row['Sharpe Ratio'] > 1:
+        interpretations.append("📊 Bonne performance ajustée au risque (Sharpe Ratio > 1).")
+    elif last_row['Sharpe Ratio'] < 0:
+        interpretations.append("⚠️ Mauvaise performance ajustée au risque (Sharpe Ratio < 0).")
+    else:
+        interpretations.append("📉 Performance moyenne (Sharpe Ratio entre 0 et 1).")
+    
+    # Max Drawdown
+    if last_row['Max Drawdown'] > 0.2:
+        interpretations.append("❗ Drawdown élevé, risque de pertes importantes.")
+    else:
+        interpretations.append("✅ Drawdown faible, bonne gestion du risque.")
     
     return interpretations
 
