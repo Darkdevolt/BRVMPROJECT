@@ -1,79 +1,48 @@
-import pandas as pd
+import csv
 
-# Définition de la structure de référence
-expected_columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
-dtypes_ref = {'Date': str, 'Open': float, 'High': float, 'Low': float, 'Close': float, 'Volume': float}
+class DataManager:
+    def __init__(self, input_file):
+        self.input_file = input_file
+        self.corrected_data = []  # Pour stocker les données corrigées
+        self.header = None  # Pour stocker l'en-tête du fichier CSV
 
-def check_structure(df):
-    """
-    Vérifie si le fichier CSV respecte la structure attendue.
-    Retourne un message d'erreur si la structure est incorrecte, sinon None.
-    """
-    # Normaliser les noms de colonnes (enlever les espaces et mettre en minuscules)
-    df.columns = df.columns.str.strip().str.lower()
-    expected_columns_lower = [col.lower() for col in expected_columns]
+    def correct_csv(self):
+        """
+        Lit le fichier CSV, corrige les lignes incomplètes et stocke les données corrigées.
+        """
+        # Ouvrir le fichier CSV d'entrée
+        with open(self.input_file, mode='r', newline='') as infile:
+            reader = csv.reader(infile)
+            
+            # Lire l'en-tête (première ligne)
+            self.header = next(reader)
+            self.corrected_data.append(self.header)  # Ajouter l'en-tête aux données corrigées
+            
+            # Vérifier chaque ligne
+            for row in reader:
+                # Si la ligne a le bon nombre de colonnes (6 colonnes dans ce cas)
+                if len(row) == 6:
+                    self.corrected_data.append(row)  # Ajouter la ligne aux données corrigées
+                else:
+                    print(f"Ignoré : Ligne incomplète : {row}")  # Afficher un message pour les lignes incomplètes
 
-    # Vérifier les colonnes
-    if list(df.columns) != expected_columns_lower:
-        return "❌ Erreur : La structure du fichier ne correspond pas au modèle attendu."
-
-    # Vérifier les types de données
-    type_errors = []
-    for col, expected_type in dtypes_ref.items():
-        try:
-            df[col] = df[col].astype(expected_type)
-        except ValueError:
-            type_errors.append(f"{col} (Attendu: {expected_type}, Trouvé: {df[col].dtype})")
-
-    if type_errors:
-        return "❌ Erreur : Les types de certaines colonnes ne correspondent pas."
-
-    return None  # Aucune erreur
-
-def handle_missing_data(df):
-    """
-    Gère les données manquantes en utilisant une interpolation linéaire.
-    Retourne le DataFrame traité.
-    """
-    try:
-        # Convertir la colonne 'Date' en datetime
-        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%y', errors='coerce')
+    def save_corrected_csv(self, output_file):
+        """
+        Sauvegarde les données corrigées dans un nouveau fichier CSV.
+        """
+        if not self.corrected_data:
+            print("Aucune donnée corrigée à sauvegarder.")
+            return
         
-        # Vérifier si la conversion a échoué pour certaines dates
-        if df['Date'].isnull().any():
-            st.warning("⚠️ Certaines dates n'ont pas pu être converties. Elles seront ignorées.")
-            df = df.dropna(subset=['Date'])  # Supprimer les lignes avec des dates invalides
+        # Écrire les données corrigées dans un nouveau fichier CSV
+        with open(output_file, mode='w', newline='') as outfile:
+            writer = csv.writer(outfile)
+            writer.writerows(self.corrected_data)
         
-        # Trier les données par date
-        df = df.sort_values(by='Date')
-        
-        # Interpolation linéaire pour les colonnes numériques
-        numeric_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-        for col in numeric_columns:
-            df[col] = df[col].interpolate(method='linear')
-        
-        return df
-    except Exception as e:
-        raise ValueError(f"Erreur lors de la gestion des données manquantes : {e}")
+        print(f"Fichier corrigé enregistré sous : {output_file}")
 
-def process_data(file):
-    """
-    Charge un fichier CSV, vérifie sa structure, et gère les données manquantes.
-    Retourne le DataFrame traité et un message d'erreur (ou None si tout est OK).
-    """
-    try:
-        # Charger le fichier CSV
-        df = pd.read_csv(file)
-        
-        # Vérifier la structure
-        error_message = check_structure(df)
-        if error_message:
-            return None, error_message
-        
-        # Gérer les données manquantes
-        df = handle_missing_data(df)
-        
-        return df, None  # Retourner le DataFrame traité et aucun message d'erreur
-    
-    except Exception as e:
-        return None, f"❌ Erreur lors de la lecture ou du traitement du fichier : {e}"
+    def get_corrected_data(self):
+        """
+        Retourne les données corrigées.
+        """
+        return self.corrected_data
