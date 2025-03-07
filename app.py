@@ -1,28 +1,30 @@
 import streamlit as st
-import data_manager
+from data_manager import DataManager
 
-st.title("📊 Gestion des Données CSV")
+# Titre de l'application
+st.title("Correction de fichier CSV")
 
-# Téléverser un fichier CSV
-uploaded_file = st.file_uploader("Déposez votre fichier CSV", type=["csv"])
+# Téléchargement du fichier CSV
+uploaded_file = st.file_uploader("Téléchargez votre fichier CSV", type=["csv"])
 
 if uploaded_file is not None:
-    # Traiter les données
+    # Créer une instance de DataManager
+    data_manager = DataManager()
+    
+    # Traiter le fichier téléchargé
     df, error_message = data_manager.process_data(uploaded_file)
     
     if error_message:
-        st.error(error_message)  # Afficher le message d'erreur
+        st.error(error_message)  # Afficher un message d'erreur si quelque chose s'est mal passé
     else:
-        st.success("✅ Succès : Le fichier est valide et les données manquantes ont été traitées !")
+        st.success("Fichier CSV traité avec succès !")
         
-        # Afficher les données traitées
-        st.write("Aperçu des données traitées :")
+        # Afficher les données corrigées dans un tableau
+        st.write("Données corrigées :")
         st.dataframe(df)
         
-        # Option pour télécharger les données traitées
-        st.download_button(
-            label="Télécharger les données traitées",
-            data=df.to_csv(index=False).encode('utf-8'),
-            file_name="donnees_traitees.csv",
-            mime="text/csv"
-        )
+        # Option pour sauvegarder les données corrigées
+        if st.button("Sauvegarder les données corrigées"):
+            output_file = "data/output/corrected_data.csv"  # Chemin du fichier de sortie
+            data_manager.save_corrected_csv(output_file)
+            st.success(f"Données sauvegardées sous : {output_file}")
