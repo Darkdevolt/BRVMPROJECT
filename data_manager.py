@@ -35,18 +35,26 @@ def handle_missing_data(df):
     Gère les données manquantes en utilisant une interpolation linéaire.
     Retourne le DataFrame traité.
     """
-    # Convertir la colonne 'Date' en datetime
-    df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%y')
-    
-    # Trier les données par date
-    df = df.sort_values(by='Date')
-    
-    # Interpolation linéaire pour les colonnes numériques
-    numeric_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-    for col in numeric_columns:
-        df[col] = df[col].interpolate(method='linear')
-    
-    return df
+    try:
+        # Convertir la colonne 'Date' en datetime
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%y', errors='coerce')
+        
+        # Vérifier si la conversion a échoué pour certaines dates
+        if df['Date'].isnull().any():
+            st.warning("⚠️ Certaines dates n'ont pas pu être converties. Elles seront ignorées.")
+            df = df.dropna(subset=['Date'])  # Supprimer les lignes avec des dates invalides
+        
+        # Trier les données par date
+        df = df.sort_values(by='Date')
+        
+        # Interpolation linéaire pour les colonnes numériques
+        numeric_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+        for col in numeric_columns:
+            df[col] = df[col].interpolate(method='linear')
+        
+        return df
+    except Exception as e:
+        raise ValueError(f"Erreur lors de la gestion des données manquantes : {e}")
 
 def process_data(file):
     """
@@ -68,4 +76,4 @@ def process_data(file):
         return df, None  # Retourner le DataFrame traité et aucun message d'erreur
     
     except Exception as e:
-        return None, f"❌ Erreur lors de la lecture du fichier : {e}"
+        return None, f"❌ Erreur lors de la lecture ou du traitement du fichier : {e}"
